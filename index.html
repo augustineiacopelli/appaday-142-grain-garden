@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grain Garden | AppADay 142</title>
+<meta name="description" content="A falling sand garden. Pour sand, water, acid, lava, stone, wood, plant, and fire, and watch them fall, flow, burn, dissolve, and grow. Flip or tilt gravity and save a crisp PNG.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Grain Garden | AppADay 142">
+<meta property="og:description" content="A falling sand garden. Pour eight elements, watch them react, flip or tilt gravity, and save a crisp PNG.">
+<meta property="og:url" content="https://augustineiacopelli.github.io/appaday-142-grain-garden/">
+<meta property="og:image" content="https://augustineiacopelli.github.io/appaday/og-image.png?v=3">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Grain Garden | AppADay 142">
+<meta name="twitter:description" content="A falling sand garden. Pour eight elements, watch them react, flip or tilt gravity, and save a crisp PNG.">
+<meta name="twitter:image" content="https://augustineiacopelli.github.io/appaday/og-image.png?v=3">
+<meta name="theme-color" content="#0e0c0a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0c0a;
+    --panel: #18140f;
+    --raised: #221c16;
+    --line: #2f2820;
+    --ink: #efe6d6;
+    --muted: #9c8f7c;
+    --accent: #e0b35f;
+    --accent-bg: #3a2d1b;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    height: 100dvh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 14px;
+    padding-top: env(safe-area-inset-top);
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    flex: 0 0 auto;
+  }
+  .title {
+    font-family: 'Silkscreen', monospace;
+    font-size: clamp(15px, 4.2vw, 19px);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .title .num { color: var(--accent); margin-right: 8px; }
+  .back {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 4px;
+    white-space: nowrap;
+  }
+  .back:hover, .back:focus-visible { color: var(--accent); }
+  .stage {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background:
+      radial-gradient(ellipse at 50% 40%, rgba(224,179,95,0.06), transparent 70%),
+      var(--bg);
+  }
+  canvas {
+    display: block;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    touch-action: none;
+    cursor: crosshair;
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px var(--line), 0 10px 34px rgba(0,0,0,0.55);
+  }
+  .hint {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+    transition: opacity 0.5s ease;
+  }
+  .hint b {
+    display: block;
+    font-family: 'Silkscreen', monospace;
+    font-weight: 400;
+    font-size: 18px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .hint.gone { opacity: 0; }
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translate(-50%, 8px);
+    background: rgba(24,20,15,0.92);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toolbar {
+    flex: 0 0 auto;
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .chips {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 22px;
+    border: 1px solid var(--line);
+    background: var(--raised);
+    color: var(--ink);
+    font: 600 13px 'Space Grotesk', system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .chip .sw {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+  }
+  .chip[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .brush {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 250px;
+    min-width: 0;
+    min-height: 44px;
+  }
+  .brush label { font-size: 13px; color: var(--muted); }
+  .brush input {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    accent-color: var(--accent);
+  }
+  .brush output {
+    width: 14px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+  }
+  select, .btn {
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--raised);
+    color: var(--ink);
+    font: 600 13px 'Space Grotesk', system-ui, sans-serif;
+    cursor: pointer;
+  }
+  select { padding: 0 8px; flex: 0 0 auto; }
+  .btns {
+    display: flex;
+    gap: 6px;
+    flex: 1 1 300px;
+  }
+  .btn { flex: 1 1 0; padding: 0 6px; }
+  .btn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+  .btn:active, .chip:active { transform: translateY(1px); }
+  button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .foot {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 14px;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .foot .motto { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="title"><span class="num">142</span>Grain Garden</div>
+  <a class="back" href="https://augustineiacopelli.github.io/appaday/">AppADay</a>
+</header>
+
+<main class="stage" id="stage">
+  <canvas id="world" aria-label="Falling sand garden. Draw to pour the selected element."></canvas>
+  <div class="hint" id="hint"><b>Grain Garden</b>Pick an element and draw.<br>Or try a preset.</div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</main>
+
+<section class="toolbar" aria-label="Tools">
+  <div class="chips" id="chips" role="toolbar" aria-label="Elements"></div>
+  <div class="controls">
+    <div class="brush">
+      <label for="brush">Brush</label>
+      <input type="range" id="brush" min="1" max="8" step="1" value="3">
+      <output id="brushOut" for="brush">3</output>
+      <select id="preset" aria-label="Load a preset">
+        <option value="">Preset</option>
+        <option value="hourglass">Hourglass</option>
+        <option value="lava">Lava Lake</option>
+        <option value="forest">Tinder Forest</option>
+      </select>
+    </div>
+    <div class="btns">
+      <button class="btn" id="pauseBtn" type="button">Pause</button>
+      <button class="btn" id="clearBtn" type="button">Clear</button>
+      <button class="btn" id="flipBtn" type="button">Flip</button>
+      <button class="btn" id="tiltBtn" type="button" aria-pressed="false">Tilt</button>
+      <button class="btn" id="snapBtn" type="button">Snap</button>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <span class="motto">Ship something every day.</span>
+  <a class="back" href="https://augustineiacopelli.github.io/appaday/">AppADay portfolio</a>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- Element table ----------
+  var EMPTY = 0, SAND = 1, WATER = 2, ACID = 3, LAVA = 4, STONE = 5,
+      WOOD = 6, PLANT = 7, FIRE = 8, STEAM = 9, SMOKE = 10;
+  var K_EMPTY = 0, K_POWDER = 1, K_LIQUID = 2, K_STATIC = 3, K_GAS = 4;
+
+  var EL = [
+    { name: 'Empty', kind: K_EMPTY,  dens: 1,  disp: 0, chip: 'Eraser', shades: ['#120f0c', '#120f0c', '#120f0c', '#120f0c'] },
+    { name: 'Sand',  kind: K_POWDER, dens: 4,  disp: 0, chip: 'Sand',   shades: ['#c49a54', '#d4ab64', '#dfb771', '#eac584'] },
+    { name: 'Water', kind: K_LIQUID, dens: 2,  disp: 4, chip: 'Water',  shades: ['#2f6cc4', '#3a79d2', '#4585dc', '#5693e4'] },
+    { name: 'Acid',  kind: K_LIQUID, dens: 2,  disp: 3, chip: 'Acid',   shades: ['#6cc934', '#7cd842', '#8ce550', '#a3ef68'] },
+    { name: 'Lava',  kind: K_LIQUID, dens: 3,  disp: 1, chip: 'Lava',   shades: ['#c22e0e', '#f2471a', '#ff7428', '#ffae45'] },
+    { name: 'Stone', kind: K_STATIC, dens: 99, disp: 0, chip: 'Stone',  shades: ['#6a6761', '#75716b', '#7f7b74', '#8a867f'] },
+    { name: 'Wood',  kind: K_STATIC, dens: 99, disp: 0, chip: 'Wood',   shades: ['#5c381d', '#6b4223', '#784b28', '#855531'] },
+    { name: 'Plant', kind: K_STATIC, dens: 99, disp: 0, chip: 'Plant',  shades: ['#2d853a', '#369444', '#3fa14d', '#4fb45c'] },
+    { name: 'Fire',  kind: K_GAS,    dens: 0,  disp: 0, chip: 'Fire',   shades: ['#e5421a', '#ff7722', '#ffab2e', '#ffdd78'] },
+    { name: 'Steam', kind: K_GAS,    dens: 0,  disp: 0, chip: null,     shades: ['#a9b7c3', '#b9c6d0', '#c7d4de', '#d7e1e9'] },
+    { name: 'Smoke', kind: K_GAS,    dens: 0,  disp: 0, chip: null,     shades: ['#37322f', '#403a36', '#48423e', '#524c47'] }
+  ];
+  var CHIP_ORDER = [SAND, WATER, ACID, LAVA, STONE, WOOD, PLANT, FIRE, EMPTY];
+  var NEL = EL.length;
+  var KIND = new Uint8Array(NEL), DENS = new Uint8Array(NEL), DISP = new Uint8Array(NEL), REACT = new Uint8Array(NEL);
+  for (var e = 0; e < NEL; e++) { KIND[e] = EL[e].kind; DENS[e] = EL[e].dens; DISP[e] = EL[e].disp; }
+  REACT[WATER] = 1; REACT[LAVA] = 1; REACT[FIRE] = 1; REACT[ACID] = 1; REACT[PLANT] = 1;
+
+  var DX = [-1, 0, 1, -1, 1, -1, 0, 1];
+  var DY = [-1, -1, -1, 0, 0, 1, 1, 1];
+
+  // ---------- DOM ----------
+  var stage = document.getElementById('stage');
+  var canvas = document.getElementById('world');
+  var ctx = canvas.getContext('2d');
+  var hintEl = document.getElementById('hint');
+  var toastEl = document.getElementById('toast');
+  var chipsEl = document.getElementById('chips');
+  var brushEl = document.getElementById('brush');
+  var brushOut = document.getElementById('brushOut');
+  var presetEl = document.getElementById('preset');
+  var pauseBtn = document.getElementById('pauseBtn');
+  var clearBtn = document.getElementById('clearBtn');
+  var flipBtn = document.getElementById('flipBtn');
+  var tiltBtn = document.getElementById('tiltBtn');
+  var snapBtn = document.getElementById('snapBtn');
+
+  // ---------- Grid (built once) ----------
+  var W = 160;
+  var H = (function () {
+    var sw = Math.max(1, stage.clientWidth - 16);
+    var sh = Math.max(1, stage.clientHeight - 16);
+    return Math.max(90, Math.min(260, Math.round(W * sh / sw)));
+  })();
+  var N = W * H;
+  var cells = new Uint8Array(N);
+  var shade = new Uint8Array(N);
+  var life = new Uint8Array(N);
+  var stamp = new Uint8Array(N);
+  canvas.width = W;
+  canvas.height = H;
+
+  var gx = 0, gy = 1, px = -1, py = 0;
+  var paused = false;
+
+  // ---------- Palette ----------
+  function hexTo32(hex) {
+    var r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
+  }
+  var PAL = new Uint32Array(NEL * 4);
+  for (var p = 0; p < NEL; p++) for (var s = 0; s < 4; s++) PAL[p * 4 + s] = hexTo32(EL[p].shades[s]);
+  var img = ctx.createImageData(W, H);
+  var buf = new Uint32Array(img.data.buffer);
+
+  // ---------- Cell helpers ----------
+  function at(x, y) { return (x < 0 || y < 0 || x >= W || y >= H) ? -1 : y * W + x; }
+  function initLife(el) {
+    if (el === FIRE) return 20 + ((Math.random() * 26) | 0);
+    if (el === STEAM) return 90 + ((Math.random() * 90) | 0);
+    if (el === SMOKE) return 40 + ((Math.random() * 60) | 0);
+    return 0;
+  }
+  function set(j, el) {
+    cells[j] = el;
+    shade[j] = (Math.random() * 4) | 0;
+    life[j] = initLife(el);
+    stamp[j] = 1;
+  }
+  function clearCell(j) { cells[j] = EMPTY; life[j] = 0; stamp[j] = 1; }
+  function swap(i, j) {
+    var t = cells[i]; cells[i] = cells[j]; cells[j] = t;
+    t = shade[i]; shade[i] = shade[j]; shade[j] = t;
+    t = life[i]; life[i] = life[j]; life[j] = t;
+    stamp[i] = 1; stamp[j] = 1;
+  }
+  function canEnter(c, j) {
+    if (j < 0) return false;
+    var b = cells[j];
+    if (b === EMPTY) return true;
+    if (stamp[j]) return false;
+    if (KIND[b] === K_STATIC) return false;
+    return DENS[b] < DENS[c];
+  }
+  function canRise(j, c) {
+    if (j < 0) return false;
+    var b = cells[j];
+    if (b === EMPTY) return true;
+    if (stamp[j]) return false;
+    if (c === FIRE && (b === SMOKE || b === STEAM)) return true;
+    return KIND[b] === K_LIQUID;
+  }
+
+  // ---------- Reactions ----------
+  function react(x, y, i, c) {
+    var d = (Math.random() * 8) | 0;
+    var j = at(x + DX[d], y + DY[d]);
+    if (j < 0) return false;
+    var n = cells[j];
+    var r = Math.random();
+    switch (c) {
+      case WATER:
+        if (n === LAVA) { set(j, STONE); if (r < 0.5) { set(i, STEAM); return true; } return false; }
+        if (n === FIRE) { set(j, SMOKE); return false; }
+        return false;
+      case LAVA:
+        if (n === WATER) { set(i, STONE); if (r < 0.5) set(j, STEAM); return true; }
+        if ((n === WOOD && r < 0.08) || (n === PLANT && r < 0.15)) set(j, FIRE);
+        return false;
+      case FIRE:
+        if ((n === WOOD && r < 0.25) || (n === PLANT && r < 0.4)) set(j, FIRE);
+        else if (n === WATER) { set(i, STEAM); return true; }
+        return false;
+      case ACID:
+        if (n === SAND || n === STONE || n === WOOD || n === PLANT) {
+          if (r < (n === STONE ? 0.2 : 0.35)) {
+            if (Math.random() < 0.15) set(j, SMOKE); else clearCell(j);
+            if (Math.random() < 0.34) { clearCell(i); return true; }
+          }
+        }
+        return false;
+      case PLANT:
+        if (n === WATER && r < 0.05) set(j, PLANT);
+        return false;
+    }
+    return false;
+  }
+
+  // ---------- Movement ----------
+  function movePowder(x, y, i, c) {
+    var j = at(x + gx, y + gy);
+    if (canEnter(c, j)) { swap(i, j); return true; }
+    var s = Math.random() < 0.5 ? 1 : -1;
+    j = at(x + gx + s * px, y + gy + s * py);
+    if (canEnter(c, j)) { swap(i, j); return true; }
+    j = at(x + gx - s * px, y + gy - s * py);
+    if (canEnter(c, j)) { swap(i, j); return true; }
+    return false;
+  }
+  function spread(x, y, i, s, disp) {
+    var best = -1;
+    for (var k = 1; k <= disp; k++) {
+      var j = at(x + s * k * px, y + s * k * py);
+      if (j < 0) break;
+      var b = cells[j];
+      if (b === EMPTY || (KIND[b] === K_GAS && !stamp[j])) best = j; else break;
+    }
+    if (best >= 0) { swap(i, best); return true; }
+    return false;
+  }
+  function moveLiquid(x, y, i, c) {
+    if (c === LAVA && Math.random() < 0.5) return;
+    if (movePowder(x, y, i, c)) return;
+    var s = Math.random() < 0.5 ? 1 : -1;
+    if (!spread(x, y, i, s, DISP[c])) spread(x, y, i, -s, DISP[c]);
+  }
+  function moveGas(x, y, i, c) {
+    var l = life[i];
+    if (l > 0) { l--; life[i] = l; }
+    if (l === 0) {
+      if (c === FIRE) { if (Math.random() < 0.55) set(i, SMOKE); else clearCell(i); }
+      else if (c === STEAM) { if (Math.random() < 0.3) set(i, WATER); else clearCell(i); }
+      else clearCell(i);
+      return;
+    }
+    if (c === FIRE && Math.random() < 0.45) return;
+    var ux = -gx, uy = -gy, j;
+    var s = Math.random() < 0.5 ? 1 : -1;
+    if (Math.random() < 0.6) { j = at(x + ux, y + uy); if (canRise(j, c)) { swap(i, j); return; } }
+    j = at(x + ux + s * px, y + uy + s * py); if (canRise(j, c)) { swap(i, j); return; }
+    j = at(x + ux - s * px, y + uy - s * py); if (canRise(j, c)) { swap(i, j); return; }
+    j = at(x + s * px, y + s * py); if (canRise(j, c)) swap(i, j);
+  }
+  function update(x, y) {
+    var i = y * W + x;
+    var c = cells[i];
+    if (c === EMPTY || stamp[i]) return;
+    if (REACT[c] && react(x, y, i, c)) return;
+    if (c === FIRE && react(x, y, i, c)) return;
+    var k = KIND[c];
+    if (k === K_POWDER) movePowder(x, y, i, c);
+    else if (k === K_LIQUID) moveLiquid(x, y, i, c);
+    else if (k === K_GAS) moveGas(x, y, i, c);
+  }
+
+  var rowFlip = false;
+  function step() {
+    stamp.fill(0);
+    px = -gy; py = gx;
+    var x, y;
+    if (gy !== 0) {
+      var ys = gy > 0 ? H - 1 : 0, ye = gy > 0 ? -1 : H, yst = gy > 0 ? -1 : 1;
+      for (y = ys; y !== ye; y += yst) {
+        rowFlip = !rowFlip;
+        if (rowFlip) { for (x = 0; x < W; x++) update(x, y); }
+        else { for (x = W - 1; x >= 0; x--) update(x, y); }
+      }
+    } else {
+      var xs = gx > 0 ? W - 1 : 0, xe = gx > 0 ? -1 : W, xst = gx > 0 ? -1 : 1;
+      for (x = xs; x !== xe; x += xst) {
+        rowFlip = !rowFlip;
+        if (rowFlip) { for (y = 0; y < H; y++) update(x, y); }
+        else { for (y = H - 1; y >= 0; y--) update(x, y); }
+      }
+    }
+  }
+
+  // ---------- Render ----------
+  function render() {
+    for (var i = 0; i < N; i++) {
+      var c = cells[i], sh = shade[i];
+      if (c === FIRE || c === LAVA) sh = (sh + ((Math.random() * 4) | 0)) & 3;
+      buf[i] = PAL[c * 4 + sh];
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  function fit() {
+    var sw = Math.max(1, stage.clientWidth - 16);
+    var sh = Math.max(1, stage.clientHeight - 16);
+    var scale = Math.min(sw / W, sh / H);
+    canvas.style.width = Math.floor(W * scale) + 'px';
+    canvas.style.height = Math.floor(H * scale) + 'px';
+  }
+
+  // ---------- Storage ----------
+  var KEY_EL = 'appaday-142-element', KEY_BRUSH = 'appaday-142-brush';
+  function load(k) { try { return localStorage.getItem(k); } catch (err) { return null; } }
+  function save(k, v) { try { localStorage.setItem(k, String(v)); } catch (err) {} }
+
+  var selected = SAND;
+  var storedEl = parseInt(load(KEY_EL), 10);
+  if (!isNaN(storedEl) && CHIP_ORDER.indexOf(storedEl) !== -1) selected = storedEl;
+  var brush = 3;
+  var storedBrush = parseInt(load(KEY_BRUSH), 10);
+  if (!isNaN(storedBrush) && storedBrush >= 1 && storedBrush <= 8) brush = storedBrush;
+  brushEl.value = String(brush);
+  brushOut.textContent = String(brush);
+
+  // ---------- UI: chips ----------
+  var chipButtons = [];
+  CHIP_ORDER.forEach(function (id) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.setAttribute('aria-pressed', id === selected ? 'true' : 'false');
+    var sw = document.createElement('span');
+    sw.className = 'sw';
+    sw.style.background = id === EMPTY
+      ? 'repeating-linear-gradient(45deg,#3a332b 0 3px,#1a1612 3px 6px)'
+      : EL[id].shades[2];
+    var t = document.createElement('span');
+    t.textContent = EL[id].chip;
+    b.appendChild(sw);
+    b.appendChild(t);
+    b.addEventListener('click', function () { selectEl(id); });
+    chipsEl.appendChild(b);
+    chipButtons.push({ id: id, btn: b });
+  });
+  function selectEl(id) {
+    selected = id;
+    chipButtons.forEach(function (o) { o.btn.setAttribute('aria-pressed', o.id === id ? 'true' : 'false'); });
+    save(KEY_EL, id);
+  }
+
+  brushEl.addEventListener('input', function () {
+    brush = parseInt(brushEl.value, 10) || 1;
+    brushOut.textContent = String(brush);
+    save(KEY_BRUSH, brush);
+  });
+
+  // ---------- Toast and hint ----------
+  var toastTimer = 0;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1600);
+  }
+  var hintShown = true;
+  function hideHint() {
+    if (!hintShown) return;
+    hintShown = false;
+    hintEl.classList.add('gone');
+  }
+
+  // ---------- Painting ----------
+  function paintAt(cx, cy) {
+    var r = brush - 0.5, rr = r * r, R = Math.ceil(r);
+    var solid = KIND[selected] === K_STATIC || selected === EMPTY;
+    for (var dy = -R; dy <= R; dy++) {
+      for (var dx = -R; dx <= R; dx++) {
+        if (dx * dx + dy * dy > rr) continue;
+        var j = at(cx + dx, cy + dy);
+        if (j < 0) continue;
+        if (selected === EMPTY) { cells[j] = EMPTY; life[j] = 0; continue; }
+        if (selected !== STONE && cells[j] !== EMPTY) continue;
+        if (!solid && Math.random() >= 0.5) continue;
+        set(j, selected);
+      }
+    }
+  }
+  function paintLine(a, b) {
+    var dx = b.x - a.x, dy = b.y - a.y;
+    var n = Math.max(Math.abs(dx), Math.abs(dy));
+    if (n === 0) { paintAt(b.x, b.y); return; }
+    for (var k = 1; k <= n; k++) {
+      paintAt(Math.round(a.x + dx * k / n), Math.round(a.y + dy * k / n));
+    }
+  }
+  function toCell(ev) {
+    var rect = canvas.getBoundingClientRect();
+    var x = Math.floor((ev.clientX - rect.left) / rect.width * W);
+    var y = Math.floor((ev.clientY - rect.top) / rect.height * H);
+    return { x: Math.max(0, Math.min(W - 1, x)), y: Math.max(0, Math.min(H - 1, y)) };
+  }
+
+  var drawing = false, lastPt = null, curPt = null, activePointer = null;
+  canvas.addEventListener('pointerdown', function (ev) {
+    if (activePointer !== null) return;
+    ev.preventDefault();
+    activePointer = ev.pointerId;
+    try { canvas.setPointerCapture(ev.pointerId); } catch (err) {}
+    drawing = true;
+    hideHint();
+    curPt = lastPt = toCell(ev);
+    paintAt(curPt.x, curPt.y);
+  });
+  canvas.addEventListener('pointermove', function (ev) {
+    if (!drawing || ev.pointerId !== activePointer) return;
+    ev.preventDefault();
+    curPt = toCell(ev);
+    paintLine(lastPt, curPt);
+    lastPt = curPt;
+  });
+  function endStroke(ev) {
+    if (ev.pointerId !== activePointer) return;
+    drawing = false;
+    activePointer = null;
+  }
+  canvas.addEventListener('pointerup', endStroke);
+  canvas.addEventListener('pointercancel', endStroke);
+  canvas.addEventListener('lostpointercapture', endStroke);
+
+  // ---------- Buttons ----------
+  function clearGrid() { cells.fill(0); life.fill(0); }
+  pauseBtn.addEventListener('click', function () {
+    paused = !paused;
+    pauseBtn.textContent = paused ? 'Play' : 'Pause';
+    pauseBtn.classList.toggle('on', paused);
+  });
+  clearBtn.addEventListener('click', function () { clearGrid(); toast('Cleared'); });
+  flipBtn.addEventListener('click', function () {
+    if (tiltOn) stopTilt();
+    gx = -gx; gy = -gy;
+    toast(gy < 0 || gx < 0 ? 'Gravity flipped' : 'Gravity restored');
+  });
+
+  // ---------- Tilt ----------
+  var tiltOn = false, tiltSeen = false;
+  function screenAngle() {
+    var a = 0;
+    if (screen.orientation && typeof screen.orientation.angle === 'number') a = screen.orientation.angle;
+    else if (typeof window.orientation === 'number') a = window.orientation;
+    return ((a % 360) + 360) % 360;
+  }
+  function onOrient(ev) {
+    if (ev.beta === null || ev.gamma === null || ev.beta === undefined) return;
+    tiltSeen = true;
+    var dx = Math.sin(ev.gamma * Math.PI / 180);
+    var dy = Math.sin(ev.beta * Math.PI / 180);
+    var a = screenAngle(), sx = dx, sy = dy;
+    if (a === 90) { sx = dy; sy = -dx; }
+    else if (a === 180) { sx = -dx; sy = -dy; }
+    else if (a === 270) { sx = -dy; sy = dx; }
+    if (Math.max(Math.abs(sx), Math.abs(sy)) < 0.35) return;
+    if (Math.abs(sx) > Math.abs(sy)) { gx = sx > 0 ? 1 : -1; gy = 0; }
+    else { gx = 0; gy = sy > 0 ? 1 : -1; }
+  }
+  function stopTilt() {
+    tiltOn = false;
+    window.removeEventListener('deviceorientation', onOrient);
+    tiltBtn.classList.remove('on');
+    tiltBtn.setAttribute('aria-pressed', 'false');
+  }
+  async function toggleTilt() {
+    if (tiltOn) { stopTilt(); gx = 0; gy = 1; toast('Tilt off'); return; }
+    if (typeof DeviceOrientationEvent === 'undefined') { toast('No motion sensor'); return; }
+    try {
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        var res = await DeviceOrientationEvent.requestPermission();
+        if (res !== 'granted') { toast('Motion permission denied'); return; }
+      }
+    } catch (err) { toast('Motion permission unavailable'); return; }
+    tiltOn = true;
+    tiltSeen = false;
+    window.addEventListener('deviceorientation', onOrient);
+    tiltBtn.classList.add('on');
+    tiltBtn.setAttribute('aria-pressed', 'true');
+    toast('Tilt on');
+    setTimeout(function () {
+      if (tiltOn && !tiltSeen) { stopTilt(); toast('No motion sensor found'); }
+    }, 1500);
+  }
+  tiltBtn.addEventListener('click', toggleTilt);
+
+  // ---------- Snapshot ----------
+  function downloadBlob(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      if (a.parentNode) a.parentNode.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+    toast('PNG saved');
+  }
+  function snapshot() {
+    var S = 4;
+    var oc = document.createElement('canvas');
+    oc.width = W * S;
+    oc.height = H * S;
+    var o = oc.getContext('2d');
+    o.imageSmoothingEnabled = false;
+    o.drawImage(canvas, 0, 0, oc.width, oc.height);
+    oc.toBlob(async function (blob) {
+      if (!blob) { toast('Snapshot failed'); return; }
+      var d = new Date();
+      var name = 'grain-garden-' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') +
+        String(d.getDate()).padStart(2, '0') + '-' + String(d.getHours()).padStart(2, '0') +
+        String(d.getMinutes()).padStart(2, '0') + String(d.getSeconds()).padStart(2, '0') + '.png';
+      var file = null;
+      try { file = new File([blob], name, { type: 'image/png' }); } catch (err) { file = null; }
+      if (file && navigator.canShare && navigator.share) {
+        var ok = false;
+        try { ok = navigator.canShare({ files: [file] }); } catch (err) { ok = false; }
+        if (ok) {
+          try { await navigator.share({ files: [file], title: 'Grain Garden' }); return; }
+          catch (err) { if (err && err.name === 'AbortError') return; }
+        }
+      }
+      downloadBlob(blob, name);
+    }, 'image/png');
+  }
+  snapBtn.addEventListener('click', snapshot);
+
+  // ---------- Presets ----------
+  function put(x, y, el) { var j = at(x, y); if (j >= 0) set(j, el); }
+  function rect(x0, y0, x1, y1, el) {
+    for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) put(x, y, el);
+  }
+  function disc(cx, cy, r, el, onlyEmpty) {
+    var R = Math.ceil(r);
+    for (var dy = -R; dy <= R; dy++) for (var dx = -R; dx <= R; dx++) {
+      if (dx * dx + dy * dy > r * r) continue;
+      var j = at(cx + dx, cy + dy);
+      if (j < 0 || (onlyEmpty && cells[j] !== EMPTY)) continue;
+      set(j, el);
+    }
+  }
+  function presetHourglass() {
+    var cx = W >> 1, top = Math.round(H * 0.08), bot = Math.round(H * 0.92);
+    var mid = (top + bot) >> 1, halfH = mid - top;
+    var hw = Math.min(Math.floor(W * 0.3), Math.floor(halfH * 0.75));
+    for (var y = top; y <= bot; y++) {
+      var t = Math.abs(y - mid) / halfH;
+      var inner = Math.round(1 + (hw - 1) * t);
+      for (var k = 1; k <= 3; k++) { put(cx - inner - k, y, STONE); put(cx + inner + k, y, STONE); }
+      if (y < mid && y > top + 1 && t > 0.25) {
+        for (var x = cx - inner; x <= cx + inner; x++) put(x, y, SAND);
+      }
+    }
+    rect(cx - hw - 3, top - 1, cx + hw + 3, top, STONE);
+    rect(cx - hw - 3, bot, cx + hw + 3, bot + 1, STONE);
+  }
+  function presetLava() {
+    var wallTop = Math.round(H * 0.45), lavaTop = Math.round(H * 0.62);
+    rect(0, H - 3, W - 1, H - 1, STONE);
+    rect(0, wallTop, 2, H - 1, STONE);
+    rect(W - 3, wallTop, W - 1, H - 1, STONE);
+    rect(3, lavaTop, W - 4, H - 4, LAVA);
+    var shelfY = Math.round(H * 0.3), shelfX = Math.round(W * 0.5);
+    rect(shelfX, shelfY, W - 4, shelfY + 1, STONE);
+    rect(W - 6, shelfY - 14, W - 4, shelfY, STONE);
+    rect(Math.round(W * 0.62), shelfY - 10, W - 7, shelfY - 1, WATER);
+    rect(Math.round(W * 0.1), lavaTop - 3, Math.round(W * 0.32), lavaTop - 1, WOOD);
+    rect(Math.round(W * 0.16), lavaTop - 12, Math.round(W * 0.17), lavaTop - 4, WOOD);
+  }
+  function presetForest() {
+    var ground = Math.round(H * 0.86);
+    rect(0, ground, W - 1, H - 1, SAND);
+    var count = Math.max(4, Math.round(W / 28));
+    var firstX = 0;
+    for (var k = 0; k < count; k++) {
+      var tx = Math.round(W * (k + 0.5) / count + (Math.random() - 0.5) * 6);
+      if (k === 0) firstX = tx;
+      var th = Math.round(H * (0.28 + Math.random() * 0.2));
+      rect(tx, ground - th, tx + 1, ground - 1, WOOD);
+      var by = ground - Math.round(th * 0.6);
+      for (var b = 1; b <= 5; b++) { put(tx - b, by - b, WOOD); put(tx + 1 + b, by - b - 2, WOOD); }
+      disc(tx, ground - th, 5 + Math.random() * 4, PLANT, true);
+      disc(tx - 5, by - 6, 3 + Math.random() * 2, PLANT, true);
+      disc(tx + 6, by - 8, 3 + Math.random() * 2, PLANT, true);
+    }
+    for (var x = 0; x < W; x++) {
+      var j = at(x, ground - 1);
+      if (j >= 0 && cells[j] === EMPTY && Math.random() < 0.4) set(j, PLANT);
+    }
+    disc(Math.max(3, firstX - 4), ground - 3, 2, FIRE, true);
+  }
+  presetEl.addEventListener('change', function () {
+    var v = presetEl.value;
+    if (!v) return;
+    clearGrid();
+    if (tiltOn) stopTilt();
+    gx = 0; gy = 1;
+    if (v === 'hourglass') { presetHourglass(); toast('Hourglass. Try Flip.'); }
+    else if (v === 'lava') { presetLava(); toast('Lava Lake'); }
+    else if (v === 'forest') { presetForest(); toast('Tinder Forest'); }
+    hideHint();
+    presetEl.value = '';
+  });
+
+  // ---------- Loop ----------
+  function frame() {
+    if (drawing && curPt) paintAt(curPt.x, curPt.y);
+    if (!paused) step();
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  fit();
+  window.addEventListener('resize', fit);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(fit).observe(stage);
+  render();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
